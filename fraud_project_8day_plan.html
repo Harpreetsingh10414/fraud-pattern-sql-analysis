@@ -1,0 +1,1705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fraud Pattern SQL Analysis — 8-Day Mission Plan</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,800;1,9..144,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:         #0b0d12;
+    --bg2:        #10131a;
+    --bg3:        #161b26;
+    --border:     #1e2534;
+    --accent:     #e8354a;
+    --accent2:    #ff6b35;
+    --accent3:    #00c9a7;
+    --gold:       #f5c842;
+    --text:       #dce3ef;
+    --text-dim:   #7a8499;
+    --text-mid:   #a8b3c8;
+    --mono:       'Space Mono', monospace;
+    --serif:      'Fraunces', serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 14px;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* ── NOISE OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 999;
+    opacity: 0.4;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 80px 60px;
+    overflow: hidden;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .hero-grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 60px 60px;
+    opacity: 0.35;
+  }
+
+  .hero-glow {
+    position: absolute;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(232,53,74,0.12) 0%, transparent 70%);
+    top: -100px; right: -100px;
+    pointer-events: none;
+  }
+
+  .hero-glow2 {
+    position: absolute;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(0,201,167,0.08) 0%, transparent 70%);
+    bottom: -50px; left: 200px;
+    pointer-events: none;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(232,53,74,0.12);
+    border: 1px solid rgba(232,53,74,0.3);
+    color: var(--accent);
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border-radius: 2px;
+    margin-bottom: 28px;
+    width: fit-content;
+    animation: fadeSlideUp 0.6s ease both;
+  }
+
+  .badge::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: pulse 1.5s ease infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.7); }
+  }
+
+  .hero-title {
+    font-family: var(--serif);
+    font-size: clamp(42px, 6vw, 80px);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    max-width: 800px;
+    animation: fadeSlideUp 0.7s 0.1s ease both;
+  }
+
+  .hero-title span {
+    color: var(--accent);
+    font-style: italic;
+  }
+
+  .hero-subtitle {
+    margin-top: 24px;
+    font-size: 13px;
+    color: var(--text-mid);
+    max-width: 560px;
+    line-height: 1.8;
+    animation: fadeSlideUp 0.7s 0.2s ease both;
+  }
+
+  .hero-meta {
+    display: flex;
+    gap: 32px;
+    margin-top: 48px;
+    animation: fadeSlideUp 0.7s 0.3s ease both;
+    flex-wrap: wrap;
+  }
+
+  .meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .meta-label {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  .meta-value {
+    font-size: 22px;
+    font-family: var(--serif);
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .meta-value.red { color: var(--accent); }
+  .meta-value.green { color: var(--accent3); }
+  .meta-value.gold { color: var(--gold); }
+
+  .scroll-hint {
+    position: absolute;
+    bottom: 32px; left: 60px;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: fadeSlideUp 0.7s 0.5s ease both;
+  }
+
+  .scroll-hint::before {
+    content: '';
+    display: block;
+    width: 40px; height: 1px;
+    background: var(--text-dim);
+  }
+
+  /* ── STACK BAR ── */
+  .stack-bar {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 18px 60px;
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .stack-label {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-right: 8px;
+  }
+
+  .stack-pill {
+    font-size: 11px;
+    padding: 4px 12px;
+    border-radius: 2px;
+    letter-spacing: 0.05em;
+  }
+
+  .pill-sql  { background: rgba(245,200,66,0.1);  color: var(--gold);    border: 1px solid rgba(245,200,66,0.2); }
+  .pill-py   { background: rgba(0,201,167,0.1);   color: var(--accent3); border: 1px solid rgba(0,201,167,0.2);  }
+  .pill-db   { background: rgba(232,53,74,0.1);   color: var(--accent);  border: 1px solid rgba(232,53,74,0.2);  }
+  .pill-tool { background: rgba(168,179,200,0.08); color: var(--text-mid); border: 1px solid rgba(168,179,200,0.15); }
+
+  /* ── MAIN LAYOUT ── */
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 60px;
+  }
+
+  /* ── SECTION HEADER ── */
+  .section-header {
+    padding: 72px 0 48px;
+    display: flex;
+    align-items: baseline;
+    gap: 20px;
+  }
+
+  .section-header h2 {
+    font-family: var(--serif);
+    font-size: 36px;
+    font-weight: 600;
+  }
+
+  .section-header .line {
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── PHASES ── */
+  .phases {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    margin-bottom: 80px;
+  }
+
+  .phase {
+    background: var(--bg2);
+    padding: 28px 24px;
+  }
+
+  .phase-num {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+
+  .phase-title {
+    font-family: var(--serif);
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .phase-range {
+    font-size: 11px;
+    color: var(--accent);
+  }
+
+  .phase-desc {
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+
+  /* ── DAYS ── */
+  .days-wrapper {
+    position: relative;
+    padding-bottom: 80px;
+  }
+
+  .timeline-line {
+    position: absolute;
+    left: 39px;
+    top: 0; bottom: 0;
+    width: 1px;
+    background: linear-gradient(to bottom, var(--accent), var(--border) 60%);
+  }
+
+  .day-card {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: 32px;
+    margin-bottom: 48px;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeSlideUp 0.5s ease forwards;
+  }
+
+  .day-card:nth-child(1)  { animation-delay: 0.05s; }
+  .day-card:nth-child(2)  { animation-delay: 0.10s; }
+  .day-card:nth-child(3)  { animation-delay: 0.15s; }
+  .day-card:nth-child(4)  { animation-delay: 0.20s; }
+  .day-card:nth-child(5)  { animation-delay: 0.25s; }
+  .day-card:nth-child(6)  { animation-delay: 0.30s; }
+  .day-card:nth-child(7)  { animation-delay: 0.35s; }
+  .day-card:nth-child(8)  { animation-delay: 0.40s; }
+
+  .day-marker {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding-top: 24px;
+  }
+
+  .day-dot {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    border: 2px solid var(--accent);
+    background: var(--bg);
+    position: relative;
+    z-index: 1;
+    flex-shrink: 0;
+  }
+
+  .day-dot.done { background: var(--accent); }
+  .day-dot.mid  { border-color: var(--accent2); }
+  .day-dot.end  { border-color: var(--gold); background: rgba(245,200,66,0.15); }
+
+  .day-num-text {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    writing-mode: vertical-rl;
+    text-transform: uppercase;
+  }
+
+  .day-body {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    transition: border-color 0.25s;
+  }
+
+  .day-body:hover {
+    border-color: rgba(232,53,74,0.4);
+  }
+
+  .day-header {
+    padding: 24px 28px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .day-title-area {}
+
+  .day-tag {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+
+  .day-title {
+    font-family: var(--serif);
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+
+  .day-badges {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+  }
+
+  .day-badge {
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 2px;
+    letter-spacing: 0.05em;
+  }
+
+  .badge-setup   { background: rgba(0,201,167,0.1);  color: var(--accent3); border: 1px solid rgba(0,201,167,0.2);  }
+  .badge-sql     { background: rgba(245,200,66,0.1);  color: var(--gold);    border: 1px solid rgba(245,200,66,0.2); }
+  .badge-python  { background: rgba(0,201,167,0.1);   color: var(--accent3); border: 1px solid rgba(0,201,167,0.2);  }
+  .badge-test    { background: rgba(255,107,53,0.1);  color: var(--accent2); border: 1px solid rgba(255,107,53,0.2); }
+  .badge-docs    { background: rgba(168,179,200,0.1); color: var(--text-mid); border: 1px solid rgba(168,179,200,0.2); }
+  .badge-deploy  { background: rgba(232,53,74,0.1);   color: var(--accent);  border: 1px solid rgba(232,53,74,0.2);  }
+
+  .day-effort {
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .effort-label {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .effort-val {
+    font-family: var(--serif);
+    font-size: 28px;
+    font-weight: 300;
+    color: var(--text-mid);
+  }
+
+  .effort-unit {
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  .day-content {
+    padding: 24px 28px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+  }
+
+  .content-section { }
+
+  .cs-title {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .task-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .task-list li {
+    font-size: 12.5px;
+    color: var(--text-mid);
+    line-height: 1.6;
+    padding-left: 18px;
+    position: relative;
+  }
+
+  .task-list li::before {
+    content: '→';
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+    font-size: 11px;
+  }
+
+  .task-list li strong {
+    color: var(--text);
+    font-weight: 700;
+  }
+
+  .tools-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .tool-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 10px;
+    background: var(--bg3);
+    border-radius: 3px;
+    border: 1px solid var(--border);
+  }
+
+  .tool-icon {
+    font-size: 14px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .tool-name {
+    font-size: 12px;
+    color: var(--text);
+    font-weight: 700;
+    display: block;
+  }
+
+  .tool-desc {
+    font-size: 11px;
+    color: var(--text-dim);
+    display: block;
+    line-height: 1.5;
+  }
+
+  .resources-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .resource-item {
+    font-size: 12px;
+    color: var(--text-mid);
+    padding: 6px 10px;
+    background: var(--bg3);
+    border-left: 2px solid var(--accent3);
+    line-height: 1.5;
+  }
+
+  .resource-item a {
+    color: var(--accent3);
+    text-decoration: none;
+    font-weight: 700;
+  }
+
+  .resource-item a:hover { text-decoration: underline; }
+
+  .deliverable-box {
+    grid-column: 1 / -1;
+    background: rgba(0,201,167,0.04);
+    border: 1px solid rgba(0,201,167,0.2);
+    border-radius: 3px;
+    padding: 16px 20px;
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .deliverable-label {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent3);
+    white-space: nowrap;
+    padding-top: 2px;
+    flex-shrink: 0;
+  }
+
+  .deliverable-files {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .file-chip {
+    font-size: 11px;
+    font-family: var(--mono);
+    padding: 3px 10px;
+    background: rgba(0,201,167,0.1);
+    border: 1px solid rgba(0,201,167,0.25);
+    color: var(--accent3);
+    border-radius: 2px;
+  }
+
+  /* ── CODE BLOCK ── */
+  .code-block {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 14px 16px;
+    font-size: 11.5px;
+    color: var(--accent3);
+    line-height: 1.7;
+    overflow-x: auto;
+    margin-top: 8px;
+    white-space: pre;
+  }
+
+  .code-block .kw  { color: var(--accent);  }
+  .code-block .fn  { color: var(--gold);     }
+  .code-block .cm  { color: var(--text-dim); font-style: italic; }
+  .code-block .str { color: #98d9b5;         }
+
+  /* ── FULL-WIDTH SECTION ── */
+  .fw-section {
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+    padding: 56px 60px;
+    margin: 0;
+  }
+
+  .fw-section .inner {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  /* ── DEPLOYMENT TABLE ── */
+  .deploy-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    margin-top: 32px;
+  }
+
+  .deploy-item {
+    background: var(--bg);
+    padding: 24px 20px;
+  }
+
+  .deploy-service {
+    font-family: var(--serif);
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .deploy-purpose {
+    font-size: 11px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 10px;
+  }
+
+  .deploy-desc {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+
+  /* ── CHECKLIST ── */
+  .final-checklist {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 32px;
+  }
+
+  .check-item {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 14px 16px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+  }
+
+  .check-box {
+    width: 16px; height: 16px;
+    border: 1.5px solid var(--accent3);
+    border-radius: 2px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .check-text {
+    font-size: 12.5px;
+    color: var(--text-mid);
+    line-height: 1.5;
+  }
+
+  .check-text strong { color: var(--text); }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 40px 60px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: gap;
+  }
+
+  .footer-brand {
+    font-family: var(--serif);
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-dim);
+  }
+
+  .footer-brand span { color: var(--accent); }
+
+  .footer-note {
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0);    }
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    .hero, .stack-bar, .fw-section, footer { padding-left: 24px; padding-right: 24px; }
+    .container { padding: 0 24px; }
+    .day-content { grid-template-columns: 1fr; }
+    .phases { grid-template-columns: 1fr; }
+    .deploy-grid { grid-template-columns: 1fr 1fr; }
+    .final-checklist { grid-template-columns: 1fr; }
+    .day-body:hover { border-color: var(--border); }
+  }
+</style>
+</head>
+<body>
+
+<!-- ╔══════════════════════════════════════════════════════╗ -->
+<!-- ║                        HERO                         ║ -->
+<!-- ╚══════════════════════════════════════════════════════╝ -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-glow2"></div>
+
+  <div class="badge">Portfolio Project — Data Engineering</div>
+
+  <h1 class="hero-title">
+    Fraud Pattern<br><span>SQL Analysis</span><br>Mission Plan
+  </h1>
+
+  <p class="hero-subtitle">
+    A complete 8-day execution roadmap to build, test, document, and deploy
+    a production-grade fraud detection data pipeline — from raw data generation
+    to a live Streamlit dashboard, ready to showcase on GitHub, LinkedIn, and Naukri.
+  </p>
+
+  <div class="hero-meta">
+    <div class="meta-item">
+      <span class="meta-label">Duration</span>
+      <span class="meta-value red">8 Days</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-label">Dataset Size</span>
+      <span class="meta-value green">1M+ rows</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-label">Fraud Patterns</span>
+      <span class="meta-value gold">3 Types</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-label">Primary Skills</span>
+      <span class="meta-value" style="font-size:15px">SQL · Python · DuckDB · pytest</span>
+    </div>
+  </div>
+
+  <div class="scroll-hint">Scroll to begin</div>
+</section>
+
+<!-- ╔══════════════════════════════════════════════════════╗ -->
+<!-- ║                     TECH STACK                      ║ -->
+<!-- ╚══════════════════════════════════════════════════════╝ -->
+<div class="stack-bar">
+  <span class="stack-label">Tech Stack</span>
+  <span class="stack-pill pill-db">DuckDB</span>
+  <span class="stack-pill pill-py">Python 3.11+</span>
+  <span class="stack-pill pill-sql">SQL (Window Functions)</span>
+  <span class="stack-pill pill-py">Faker</span>
+  <span class="stack-pill pill-py">Pandas</span>
+  <span class="stack-pill pill-tool">pytest</span>
+  <span class="stack-pill pill-tool">Streamlit</span>
+  <span class="stack-pill pill-tool">GitHub Pages</span>
+  <span class="stack-pill pill-tool">Streamlit Cloud</span>
+  <span class="stack-pill pill-tool">VS Code</span>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════════╗ -->
+<!-- ║                      PHASES                         ║ -->
+<!-- ╚══════════════════════════════════════════════════════╝ -->
+<div class="container">
+  <div class="section-header">
+    <h2>Project Phases</h2>
+    <div class="line"></div>
+  </div>
+
+  <div class="phases">
+    <div class="phase">
+      <div class="phase-num">Phase 01</div>
+      <div class="phase-title">Foundation</div>
+      <div class="phase-range">Days 1 – 2</div>
+      <div class="phase-desc">Set up the environment, generate 1M synthetic bank transactions, load them into DuckDB, and write the first fraud SQL query (velocity fraud).</div>
+    </div>
+    <div class="phase">
+      <div class="phase-num">Phase 02</div>
+      <div class="phase-title">Core Detection</div>
+      <div class="phase-range">Days 3 – 4</div>
+      <div class="phase-desc">Build the geographic impossibility and amount deviation queries. Understand advanced window functions, self-joins, and statistical Z-score deviation.</div>
+    </div>
+    <div class="phase">
+      <div class="phase-num">Phase 03</div>
+      <div class="phase-title">Python Pipeline</div>
+      <div class="phase-range">Day 5</div>
+      <div class="phase-desc">Write the Python orchestration layer that runs all 3 SQL queries and exports structured JSON output — the heart of the data pipeline.</div>
+    </div>
+    <div class="phase">
+      <div class="phase-num">Phase 04</div>
+      <div class="phase-title">Testing</div>
+      <div class="phase-range">Day 6</div>
+      <div class="phase-desc">Write a complete pytest suite covering all Python functions, edge cases, and output schema validation. This is what separates a project from a portfolio piece.</div>
+    </div>
+    <div class="phase">
+      <div class="phase-num">Phase 05</div>
+      <div class="phase-title">Documentation</div>
+      <div class="phase-range">Day 7</div>
+      <div class="phase-desc">Write a professional README, architecture diagram, and sample output. Structure the repo for maximum readability by recruiters and engineers.</div>
+    </div>
+    <div class="phase">
+      <div class="phase-num">Phase 06</div>
+      <div class="phase-title">Deploy + Publish</div>
+      <div class="phase-range">Day 8</div>
+      <div class="phase-desc">Deploy the Streamlit dashboard live, push to GitHub, and publish posts on LinkedIn and Naukri with the correct framing to attract attention.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════════╗ -->
+<!-- ║                    8-DAY PLAN                       ║ -->
+<!-- ╚══════════════════════════════════════════════════════╝ -->
+<div class="container">
+  <div class="section-header">
+    <h2>Day-by-Day Execution</h2>
+    <div class="line"></div>
+  </div>
+
+  <div class="days-wrapper">
+    <div class="timeline-line"></div>
+
+    <!-- ── DAY 1 ── -->
+    <div class="day-card">
+      <div class="day-marker">
+        <div class="day-dot done"></div>
+        <div class="day-num-text">Day 01</div>
+      </div>
+      <div class="day-body">
+        <div class="day-header">
+          <div class="day-title-area">
+            <div class="day-tag">Phase 01 · Foundation</div>
+            <div class="day-title">Project Setup & Synthetic Data Generation</div>
+            <div class="day-badges">
+              <span class="day-badge badge-setup">Environment</span>
+              <span class="day-badge badge-python">Python</span>
+            </div>
+          </div>
+          <div class="day-effort">
+            <div class="effort-label">Effort</div>
+            <div class="effort-val">4–5<span class="effort-unit"> hrs</span></div>
+          </div>
+        </div>
+        <div class="day-content">
+          <div class="content-section">
+            <div class="cs-title">What To Do</div>
+            <ul class="task-list">
+              <li>Create the GitHub repository <strong>fraud-pattern-sql-analysis</strong> with a proper <code>.gitignore</code> and <code>README.md</code> stub</li>
+              <li>Set up a Python virtual environment: <code>python -m venv venv</code> and install <strong>duckdb, faker, pandas, pytest</strong></li>
+              <li>Write <strong>generate_data.py</strong> — a script that uses the Faker library to create 1,000,000+ synthetic bank transactions with realistic fields: <em>transaction_id, card_id, customer_id, amount, merchant, city, timestamp</em></li>
+              <li>Include deliberate fraud seeds in 2–5% of data: rapid repeated transactions per card, two cities within 1 hour, sudden amount spikes vs card history</li>
+              <li>Load the generated CSV into a <strong>DuckDB</strong> database file (<code>fraud.db</code>) and verify row counts</li>
+              <li>Explore the dataset: run basic SQL in DuckDB — counts by city, avg amounts per card, time distribution</li>
+              <li>Commit everything to GitHub with a meaningful commit message</li>
+            </ul>
+          </div>
+          <div class="content-section">
+            <div class="cs-title">Tools & Resources</div>
+            <div class="tools-grid">
+              <div class="tool-item">
+                <span class="tool-icon">🦆</span>
+                <span>
+                  <span class="tool-name">DuckDB</span>
+                  <span class="tool-desc">In-process SQL engine — no server setup needed. Run SQL on 1M rows in milliseconds. <code>pip install duckdb</code></span>
+                </span>
+              </div>
+              <div class="tool-item">
+                <span class="tool-icon">🎭</span>
+                <span>
+                  <span class="tool-name">Faker (Python)</span>
+                  <span class="tool-desc">Generate realistic names, cities, card numbers, timestamps. <code>pip install faker</code></span>
+                </span>
+              </div>
+              <div class="tool-item">
+                <span class="tool-icon">🐍</span>
+                <span>
+                  <span class="tool-name">Pandas</span>
+                  <span class="tool-desc">Generate the DataFrame, inject fraud seeds, export to CSV before loading into DuckDB</span>
+                </span>
+              </div>
+            </div>
+            <div class="resources-list" style="margin-top:12px">
+              <div class="resource-item"><a href="https://duckdb.org/docs/api/python/overview" target="_blank">DuckDB Python API Docs</a> — official getting started guide</div>
+              <div class="resource-item"><a href="https://faker.readthedocs.io/en/master/" target="_blank">Faker Docs</a> — all providers: dates, geo, finance</div>
+              <div class="resource-item">GitHub Docs → <strong>Creating a new repository</strong> — set up with MIT license</div>
+            </div>
+          </div>
+          <div class="deliverable-box">
+            <span class="deliverable-label">✓ End of Day Deliverables</span>
+            <div class="deliverable-files">
+              <span class="file-chip">generate_data.py</span>
+              <span class="file-chip">fraud.db</span>
+              <span class="file-chip">transactions.csv</span>
+              <span class="file-chip">requirements.txt</span>
+              <span class="file-chip">.gitignore</span>
+              <span class="file-chip">Initial GitHub commit</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── DAY 2 ── -->
+    <div class="day-card">
+      <div class="day-marker">
+        <div class="day-dot"></div>
+        <div class="day-num-text">Day 02</div>
+      </div>
+      <div class="day-body">
+        <div class="day-header">
+          <div class="day-title-area">
+            <div class="day-tag">Phase 01 · Foundation</div>
+            <div class="day-title">Velocity Fraud Detection Query</div>
+            <div class="day-badges">
+              <span class="day-badge badge-sql">SQL</span>
+              <span class="day-badge badge-sql">Window Functions</span>
+            </div>
+          </div>
+          <div class="day-effort">
+            <div class="effort-label">Effort</div>
+            <div class="effort-val">4–5<span class="effort-unit"> hrs</span></div>
+          </div>
+        </div>
+        <div class="day-content">
+          <div class="content-section">
+            <div class="cs-title">What To Do</div>
+            <ul class="task-list">
+              <li>Understand the concept: <strong>velocity fraud</strong> = a card making too many transactions in a short time window (e.g., more than 5 transactions within 10 minutes)</li>
+              <li>Learn and apply <strong>SQL Window Functions</strong>: specifically <code>COUNT() OVER (PARTITION BY card_id ORDER BY timestamp RANGE BETWEEN INTERVAL '10 minutes' PRECEDING AND CURRENT ROW)</code></li>
+              <li>Write <strong>velocity_fraud.sql</strong> — a CTE-based query that calculates a rolling transaction count per card per time window, then flags cards where the count exceeds a configurable threshold</li>
+              <li>Test the query directly in DuckDB shell — verify it flags your injected fraud seeds from Day 1</li>
+              <li>Add a <strong>risk_score</strong> column: the higher the velocity, the higher the score (simple formula: <code>txn_count / threshold * 10</code>)</li>
+              <li>Store query results in a view: <code>CREATE OR REPLACE VIEW velocity_flags AS ...</code></li>
+              <li>Document the query with inline SQL comments explaining each CTE step</li>
+            </ul>
+          </div>
+          <div class="content-section">
+            <div class="cs-title">Tools & Resources</div>
+            <div class="tools-grid">
+              <div class="tool-item">
+                <span class="tool-icon">📊</span>
+                <span>
+                  <span class="tool-name">DuckDB CLI / Python</span>
+                  <span class="tool-desc">Run and test SQL directly. DuckDB supports INTERVAL-based window frames natively</span>
+                </span>
+              </div>
+              <div class="tool-item">
+                <span class="tool-icon">💡</span>
+                <span>
+                  <span class="tool-name">Mode Analytics SQL School</span>
+                  <span class="tool-desc">Free interactive tutorial on window functions — covers PARTITION BY, RANGE vs ROWS</span>
+                </span>
+              </div>
+            </div>
+            <div class="resources-list" style="margin-top:12px">
+              <div class="resource-item"><a href="https://duckdb.org/docs/sql/window_functions" target="_blank">DuckDB Window Functions Docs</a> — RANGE BETWEEN syntax</div>
+              <div class="resource-item"><a href="https://mode.com/sql-tutorial/sql-window-functions/" target="_blank">Mode SQL Window Functions Tutorial</a> — best free resource</div>
+              <div class="resource-item">Search: <strong>"rolling count window function fraud detection SQL"</strong> on StackOverflow for real-world examples</div>
+            </div>
+          </div>
+          <div class="content-section">
+            <div class="cs-title">Key SQL Concept (study this)</div>
+            <div class="code-block"><span class="kw">WITH</span> rolling_counts <span class="kw">AS</span> (
+  <span class="kw">SELECT</span>
+    transaction_id,
+    card_id,
+    timestamp,
+    amount,
+    <span class="fn">COUNT</span>(*) <span class="kw">OVER</span> (
+      <span class="kw">PARTITION BY</span> card_id
+      <span class="kw">ORDER BY</span> timestamp
+      <span class="kw">RANGE BETWEEN</span>
+        <span class="kw">INTERVAL</span> <span class="str">'10 minutes'</span> <span class="kw">PRECEDING</span>
+        <span class="kw">AND CURRENT ROW</span>
+    ) <span class="kw">AS</span> txn_count_10min
+  <span class="kw">FROM</span> transactions
+)
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> rolling_counts
+<span class="kw">WHERE</span> txn_count_10min <span class="kw">></span> 5; <span class="cm">-- threshold</span></div>
+          </div>
+          <div class="content-section">
+            <div class="cs-title">Why This Matters for Interviews</div>
+            <ul class="task-list">
+              <li>Interviewers at Flipkart, Paytm, Razorpay <strong>always ask window function questions</strong></li>
+              <li><code>RANGE BETWEEN INTERVAL</code> is an advanced pattern very few candidates know</li>
+              <li>CTEs show structured thinking — always preferred over nested subqueries</li>
+            </ul>
+          </div>
+          <div class="deliverable-box">
+            <span class="deliverable-label">✓ End of Day Deliverables</span>
+            <div class="deliverable-files">
+              <span class="file-chip">sql/velocity_fraud.sql</span>
+              <span class="file-chip">Velocity flags view in fraud.db</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── DAY 3 ── -->
+    <div class="day-card">
+      <div class="day-marker">
+        <div class="day-dot mid"></div>
+        <div class="day-num-text">Day 03</div>
+      </div>
+      <div class="day-body">
+        <div class="day-header">
+          <div class="day-title-area">
+            <div class="day-tag">Phase 02 · Core Detection</div>
+            <div class="day-title">Geographic Impossibility Detection</div>
+            <div class="day-badges">
+              <span class="day-badge badge-sql">SQL</span>
+              <span class="day-badge badge-sql">Self-Joins</span>
+              <span class="day-badge badge-sql">LAG()</span>
+            </div>
+          </div>
+          <div class="day-effort">
+            <div class="effort-label">Effort</div>
+            <div class="effort-val">4–5<span class="effort-unit"> hrs</span></div>
+          </div>
+        </div>
+        <div class="day-content">
+          <div class="content-section">
+            <div class="cs-title">What To Do</div>
+            <ul class="task-list">
+              <li>Understand the fraud type: the same card was used in <strong>two different cities within a physically impossible time gap</strong> (e.g., Delhi at 9:00 AM and Mumbai at 9:30 AM — impossible to travel in 30 min)</li>
+              <li>Add <strong>city coordinates</strong> (latitude/longitude) to your dataset for at least 15–20 Indian cities during Day 1 revisit, OR use a simple city-pair lookup table</li>
+              <li>Write <strong>geo_fraud.sql</strong> using the <code>LAG()</code> window function to compare each transaction with the previous transaction for the same card: get previous city + previous timestamp</li>
+              <li>Calculate time gap in minutes between consecutive transactions per card using timestamp arithmetic</li>
+              <li>Flag transactions where: <strong>city changed</strong> AND <strong>time gap &lt; minimum_travel_time</strong> between those cities</li>
+              <li>Create a city-distance reference table (simple approach: hardcode 10–15 city pairs with realistic min travel times in hours)</li>
+              <li>Test query — verify it catches your injected "impossible geography" seeds</li>
+            </ul>
+          </div>
+          <div class="content-section">
+            <div class="cs-title">Tools & Resources</div>
+            <div class="tools-grid">
+              <div class="tool-item">
+                <span class="tool-icon">🗺️</span>
+                <span>
+                  <span class="tool-name">LAG() Window Function</span>
+                  <span class="tool-desc">Accesses the previous row's value within a partition — perfect for comparing consecutive transactions per card</span>
+                </span>
+              </div>
+              <div class="tool-item">
+                <span class="tool-icon">🔗</span>
+                <span>
+                  <span class="tool-name">Self-Join Pattern</span>
+                  <span class="tool-desc">Alternative approach: join transactions table to itself on card_id with time constraints to find co-occurring records in different cities</span>
+                </span>
+              </div>
+            </div>
+            <div class="resources-list" style="margin-top:12px">
+              <div class="resource-item"><a href="https://duckdb.org/docs/sql/functions/timestamp" target="_blank">DuckDB Timestamp Functions</a> — for time difference calculations</div>
+              <div class="resource-item">Search: <strong>"detect impossible travel SQL LAG window function"</strong> — multiple real bank fraud examples available</div>
+              <div class="resource-item"><a href="https://www.geeksforgeeks.org/lag-function-in-sql/" target="_blank">GeeksForGeeks LAG() tutorial</a> — clear explanation with examples</div>
+            </div>
+          </div>
+          <div class="content-section">
+            <div class="cs-title">Key SQL Concept (study this)</div>
+            <div class="code-block"><span class="kw">WITH</span> consecutive_txns <span class="kw">AS</span> (
+  <span class="kw">SELECT</span>
+    card_id, city, timestamp,
+    <span class="fn">LAG</span>(city)       <span class="kw">OVER</span> (win) <span class="kw">AS</span> prev_city,
+    <span class="fn">LAG</span>(timestamp)  <span class="kw">OVER</span> (win) <span class="kw">AS</span> prev_ts
+  <span class="kw">FROM</span> transactions
+  <span class="kw">WINDOW</span> win <span class="kw">AS</span> (
+    <span class="kw">PARTITION BY</span> card_id <span class="kw">ORDER BY</span> timestamp)
+)
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> consecutive_txns
+<span class="kw">WHERE</span> city != prev_city
+  <span class="kw">AND</span> <span class="fn">DATEDIFF</span>(<span class="str">'minute'</span>, prev_ts, timestamp) &lt; 60;</div>
+          </div>
+          <div class="content-section">
+            <div class="cs-title">Why This Matters for Interviews</div>
+            <ul class="task-list">
+              <li><code>LAG()</code> / <code>LEAD()</code> are among the <strong>top 5 most-tested SQL functions</strong> in DE interviews</li>
+              <li>Shows you can model real-world business logic in SQL — not just aggregates</li>
+              <li>Self-join pattern is a common interview question itself</li>
+            </ul>
+          </div>
+          <div class="deliverable-box">
+            <span class="deliverable-label">✓ End of Day Deliverables</span>
+            <div class="deliverable-files">
+              <span class="file-chip">sql/geo_fraud.sql</span>
+              <span class="file-chip">data/city_distances.csv</span>
+              <span class="file-chip">Geo flags view in fraud.db</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── DAY 4 ── -->
+    <div class="day-card">
+      <div class="day-marker">
+        <div class="day-dot mid"></div>
+        <div class="day-num-text">Day 04</div>
+      </div>
+      <div class="day-body">
+        <div class="day-header">
+          <div class="day-title-area">
+            <div class="day-tag">Phase 02 · Core Detection</div>
+            <div class="day-title">Amount Deviation from Historical Baseline</div>
+            <div class="day-badges">
+              <span class="day-badge badge-sql">SQL</span>
+              <span class="day-badge badge-sql">Statistics</span>
+              <span class="day-badge badge-sql">Z-Score</span>
+            </div>
+          </div>
+          <div class="day-effort">
+            <div class="effort-label">Effort</div>
+            <div class="effort-val">4–5<span class="effort-unit"> hrs</span></div>
+          </div>
+        </div>
+        <div class="day-content">
+          <div class="content-section">
+            <div class="cs-title">What To Do</div>
+            <ul class="task-list">
+              <li>Understand the concept: each card has a <strong>historical spending baseline</strong> (avg amount + standard deviation). A transaction is suspicious if its amount is far from the baseline — measured using <strong>Z-score</strong> = (amount - avg) / stddev</li>
+              <li>Write <strong>amount_deviation.sql</strong> in two parts: (1) compute per-card historical baseline using <code>AVG()</code> and <code>STDDEV()</code>, (2) flag transactions where Z-score exceeds 3.0 (3 standard deviations from mean)</li>
+              <li>Use a <strong>CTE chain</strong>: first CTE computes baselines, second CTE joins back to transactions, third CTE applies the Z-score threshold filter</li>
+              <li>Add a category label: <code>CASE WHEN z_score > 5 THEN 'HIGH' WHEN z_score > 3 THEN 'MEDIUM' END</code></li>
+              <li>Handle edge case: cards with fewer than 10 historical transactions should be excluded from baseline (not enough history)</li>
+              <li>Verify the query catches your large-amount fraud seeds from Day 1</li>
+            </ul>
+          </div>
+          <div class="content-section">
+            <div class="cs-title">Tools & Resources</div>
+            <div class="tools-grid">
+              <div class="tool-item">
+                <span class="tool-icon">📐</span>
+                <span>
+                  <span class="tool-name">DuckDB STDDEV_POP / STDDEV_SAMP</span>
+                  <span class="tool-desc">Built-in aggregate functions for standard deviation. Use <code>STDDEV_SAMP</code> for sample-based datasets</span>
+                </span>
+              </div>
+              <div class="tool-item">
+                <span class="tool-icon">🧮</span>
+                <span>
+                  <span class="tool-name">Z-Score Formula</span>
+                  <span class="tool-desc"><code>(amount - avg_amount) / NULLIF(stddev_amount, 0)</code> — NULLIF protects against division by zero</span>
+                </span>
+              </div>
+            </div>
+            <div class="resources-list" style="margin-top:12px">
+              <div class="resource-item"><a href="https://duckdb.org/docs/sql/aggregates" target="_blank">DuckDB Aggregate Functions</a> — AVG, STDDEV, VARIANCE</div>
+              <div class="resource-item">Khan Academy: <strong>"Z-scores and percentiles"</strong> — understand the concept in 10 minutes</div>
+              <div class="resource-item">Search: <strong>"Z-score anomaly detection SQL"</strong> on Medium for walkthrough articles</div>
+            </div>
+          </div>
+          <div class="content-section">
+            <div class="cs-title">Key SQL Concept (study this)</div>
+            <div class="code-block"><span class="kw">WITH</span> baselines <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> card_id,
+    <span class="fn">AVG</span>(amount)          <span class="kw">AS</span> avg_amt,
+    <span class="fn">STDDEV_SAMP</span>(amount)  <span class="kw">AS</span> std_amt,
+    <span class="fn">COUNT</span>(*)             <span class="kw">AS</span> txn_count
+  <span class="kw">FROM</span> transactions
+  <span class="kw">GROUP BY</span> card_id
+  <span class="kw">HAVING COUNT</span>(*) >= 10  <span class="cm">-- min history</span>
+),
+scored <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> t.*,
+    (t.amount - b.avg_amt) /
+      <span class="fn">NULLIF</span>(b.std_amt, 0) <span class="kw">AS</span> z_score
+  <span class="kw">FROM</span> transactions t
+  <span class="kw">JOIN</span> baselines b <span class="kw">USING</span>(card_id)
+)
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> scored <span class="kw">WHERE</span> z_score > 3.0;</div>
+          </div>
+          <div class="content-section">
+            <div class="cs-title">Why This Matters for Interviews</div>
+            <ul class="task-list">
+              <li>Applying <strong>statistical concepts in SQL</strong> is a rare skill that senior DE roles specifically test</li>
+              <li>HAVING clause + CTE chains + NULLIF edge case handling — all common interview questions</li>
+              <li>Z-score is used in real fraud systems at Paytm, PhonePe, HDFC</li>
+            </ul>
+          </div>
+          <div class="deliverable-box">
+            <span class="deliverable-label">✓ End of Day Deliverables</span>
+            <div class="deliverable-files">
+              <span class="file-chip">sql/amount_deviation.sql</span>
+              <span class="file-chip">Amount flags view in fraud.db</span>
+              <span class="file-chip">All 3 SQL queries complete ✓</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── DAY 5 ── -->
+    <div class="day-card">
+      <div class="day-marker">
+        <div class="day-dot"></div>
+        <div class="day-num-text">Day 05</div>
+      </div>
+      <div class="day-body">
+        <div class="day-header">
+          <div class="day-title-area">
+            <div class="day-tag">Phase 03 · Python Pipeline</div>
+            <div class="day-title">Python Orchestration Layer & JSON Export</div>
+            <div class="day-badges">
+              <span class="day-badge badge-python">Python</span>
+              <span class="day-badge badge-python">Pipeline</span>
+              <span class="day-badge badge-python">JSON</span>
+            </div>
+          </div>
+          <div class="day-effort">
+            <div class="effort-label">Effort</div>
+            <div class="effort-val">5–6<span class="effort-unit"> hrs</span></div>
+          </div>
+        </div>
+        <div class="day-content">
+          <div class="content-section">
+            <div class="cs-title">What To Do</div>
+            <ul class="task-list">
+              <li>Create <strong>fraud_analyzer.py</strong> — the main Python module. It should have a clean class or function-based structure, not a single monolithic script</li>
+              <li>Implement <strong>FraudAnalyzer</strong> class with methods: <code>run_velocity_check()</code>, <code>run_geo_check()</code>, <code>run_amount_check()</code>, <code>run_all()</code>, <code>export_findings(output_path)</code></li>
+              <li>Each method reads the corresponding SQL file dynamically using Python file I/O (<code>Path(__file__).parent / 'sql' / 'velocity_fraud.sql'</code>) — never hardcode SQL in Python</li>
+              <li>Aggregate results from all 3 detectors into a <strong>structured findings dictionary</strong> with keys: <code>run_timestamp</code>, <code>total_transactions</code>, <code>velocity_flags</code>, <code>geo_flags</code>, <code>amount_flags</code>, <code>summary</code></li>
+              <li>Export to <strong>findings.json</strong> using Python's <code>json</code> module with proper datetime serialization</li>
+              <li>Add a <code>main()</code> entry point so the script can be run from CLI: <code>python fraud_analyzer.py --output results/findings.json</code></li>
+              <li>Use <code>argparse</code> for CLI arguments: <code>--db-path</code>, <code>--output</code>, <code>--threshold-velocity</code></li>
+            </ul>
+          </div>
+          <div class="content-section">
+            <div class="cs-title">Tools & Resources</div>
+            <div class="tools-grid">
+              <div class="tool-item">
+                <span class="tool-icon">🐍</span>
+                <span>
+                  <span class="tool-name">duckdb Python API</span>
+                  <span class="tool-desc"><code>conn.execute(sql).fetchdf()</code> returns a Pandas DataFrame directly — use this to process results before JSON export</span>
+                </span>
+              </div>
+              <div class="tool-item">
+                <span class="tool-icon">📦</span>
+                <span>
+                  <span class="tool-name">pathlib.Path</span>
+                  <span class="tool-desc">Use for all file I/O — more robust than <code>os.path</code>, standard in modern Python DE projects</span>
+                </span>
+              </div>
+              <div class="tool-item">
+                <span class="tool-icon">⚙️</span>
+                <span>
+                  <span class="tool-name">argparse</span>
+                  <span class="tool-desc">Standard library CLI argument parser — makes your script production-ready and easily scriptable</span>
+                </span>
+              </div>
+            </div>
+            <div class="resources-list" style="margin-top:12px">
+              <div class="resource-item"><a href="https://duckdb.org/docs/api/python/relational_api" target="_blank">DuckDB Python Relational API</a> — fetchdf(), execute()</div>
+              <div class="resource-item">RealPython: <a href="https://realpython.com/command-line-interfaces-python-argparse/" target="_blank">"Build a CLI with argparse"</a> — clean tutorial</div>
+              <div class="resource-item">Look at open-source DE projects on GitHub for <strong>class structure patterns</strong> — search "fraud detection python duckdb github"</div>
+            </div>
+          </div>
+          <div class="content-section">
+            <div class="cs-title">Expected JSON Output Structure</div>
+            <div class="code-block">{
+  <span class="str">"run_timestamp"</span>: <span class="str">"2024-06-10T14:32:00"</span>,
+  <span class="str">"total_transactions"</span>: 1000000,
+  <span class="str">"summary"</span>: {
+    <span class="str">"velocity_flags"</span>: 1847,
+    <span class="str">"geo_flags"</span>:      423,
+    <span class="str">"amount_flags"</span>:    912
+  },
+  <span class="str">"velocity_flags"</span>: [ { <span class="str">"card_id"</span>: <span class="str">"..."</span>, ... } ],
+  <span class="str">"geo_flags"</span>:      [ { <span class="str">"card_id"</span>: <span class="str">"..."</span>, ... } ],
+  <span class="str">"amount_flags"</span>:   [ { <span class="str">"card_id"</span>: <span class="str">"..."</span>, ... } ]
+}</div>
+          </div>
+          <div class="content-section">
+            <div class="cs-title">Why This Matters for Interviews</div>
+            <ul class="task-list">
+              <li>Demonstrates <strong>separation of concerns</strong> — SQL in .sql files, logic in Python, output in JSON</li>
+              <li>CLI interface shows you understand <strong>production pipeline design</strong></li>
+              <li>JSON export is how real DE pipelines pass data between systems (APIs, dashboards, alerting)</li>
+            </ul>
+          </div>
+          <div class="deliverable-box">
+            <span class="deliverable-label">✓ End of Day Deliverables</span>
+            <div class="deliverable-files">
+              <span class="file-chip">fraud_analyzer.py</span>
+              <span class="file-chip">results/findings.json</span>
+              <span class="file-chip">CLI working end-to-end ✓</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── DAY 6 ── -->
+    <div class="day-card">
+      <div class="day-marker">
+        <div class="day-dot"></div>
+        <div class="day-num-text">Day 06</div>
+      </div>
+      <div class="day-body">
+        <div class="day-header">
+          <div class="day-title-area">
+            <div class="day-tag">Phase 04 · Testing</div>
+            <div class="day-title">Full pytest Test Suite</div>
+            <div class="day-badges">
+              <span class="day-badge badge-test">pytest</span>
+              <span class="day-badge badge-test">Unit Tests</span>
+              <span class="day-badge badge-test">Schema Validation</span>
+            </div>
+          </div>
+          <div class="day-effort">
+            <div class="effort-label">Effort</div>
+            <div class="effort-val">4–5<span class="effort-unit"> hrs</span></div>
+          </div>
+        </div>
+        <div class="day-content">
+          <div class="content-section">
+            <div class="cs-title">What To Do</div>
+            <ul class="task-list">
+              <li>Create <strong>tests/</strong> directory with <code>__init__.py</code> and <code>conftest.py</code> — use <code>conftest.py</code> to create a shared <strong>in-memory DuckDB fixture</strong> with a small test dataset (100–200 rows) containing known fraud seeds</li>
+              <li>Write <strong>test_velocity.py</strong>: test that velocity query returns correct count of flags for a seed with exactly 8 transactions in 5 minutes. Test that a normal card (2 transactions/hour) is NOT flagged</li>
+              <li>Write <strong>test_geo.py</strong>: test that geo query flags a card used in Delhi then Mumbai in 20 minutes. Test that a card used in the same city is NOT flagged</li>
+              <li>Write <strong>test_amount.py</strong>: test that Z-score calculation is correct for a known amount. Test the NULLIF edge case (card with only 1 transaction)</li>
+              <li>Write <strong>test_fraud_analyzer.py</strong>: test the <code>FraudAnalyzer</code> class — check that <code>export_findings()</code> produces valid JSON, that the output has the correct top-level keys, that all flag arrays are non-empty when fraud seeds are present</li>
+              <li>Aim for <strong>80%+ code coverage</strong> using <code>pytest-cov</code>: <code>pytest --cov=fraud_analyzer --cov-report=html</code></li>
+            </ul>
+          </div>
+          <div class="content-section">
+            <div class="cs-title">Tools & Resources</div>
+            <div class="tools-grid">
+              <div class="tool-item">
+                <span class="tool-icon">🧪</span>
+                <span>
+                  <span class="tool-name">pytest</span>
+                  <span class="tool-desc">Industry standard Python testing framework. <code>pip install pytest pytest-cov</code></span>
+                </span>
+              </div>
+              <div class="tool-item">
+                <span class="tool-icon">🔧</span>
+                <span>
+                  <span class="tool-name">pytest fixtures (conftest.py)</span>
+                  <span class="tool-desc">Share a test DuckDB database across all test files — avoids recreating data for every test</span>
+                </span>
+              </div>
+              <div class="tool-item">
+                <span class="tool-icon">📊</span>
+                <span>
+                  <span class="tool-name">pytest-cov</span>
+                  <span class="tool-desc">Generate HTML coverage report. Screenshot it for your README — recruiters love seeing coverage badges</span>
+                </span>
+              </div>
+            </div>
+            <div class="resources-list" style="margin-top:12px">
+              <div class="resource-item"><a href="https://docs.pytest.org/en/stable/how-to/fixtures.html" target="_blank">pytest Fixtures Docs</a> — conftest.py patterns</div>
+              <div class="resource-item"><a href="https://pytest-cov.readthedocs.io/en/latest/" target="_blank">pytest-cov docs</a> — HTML reports, coverage thresholds</div>
+              <div class="resource-item">Search: <strong>"pytest conftest.py duckdb fixture example"</strong> — several GitHub examples available</div>
+            </div>
+          </div>
+          <div class="content-section">
+            <div class="cs-title">Test Structure Pattern</div>
+            <div class="code-block"><span class="cm"># conftest.py</span>
+<span class="kw">import</span> pytest, duckdb
+
+@pytest.<span class="fn">fixture</span>(scope=<span class="str">"module"</span>)
+<span class="kw">def</span> <span class="fn">test_db</span>():
+    conn = duckdb.<span class="fn">connect</span>(<span class="str">":memory:"</span>)
+    conn.<span class="fn">execute</span>(<span class="str">"""
+        CREATE TABLE transactions AS
+        SELECT * FROM read_csv('tests/fixtures/seed.csv')
+    """</span>)
+    <span class="kw">yield</span> conn
+    conn.<span class="fn">close</span>()
+
+<span class="cm"># test_velocity.py</span>
+<span class="kw">def</span> <span class="fn">test_velocity_flags_fraud</span>(test_db):
+    result = test_db.<span class="fn">execute</span>(velocity_sql).<span class="fn">fetchdf</span>()
+    <span class="kw">assert</span> <span class="fn">len</span>(result) >= 1
+    <span class="kw">assert</span> <span class="str">'CARD_FRAUD_001'</span> <span class="kw">in</span> result[<span class="str">'card_id'</span>].<span class="fn">values</span></div>
+          </div>
+          <div class="content-section">
+            <div class="cs-title">Why This Matters for Interviews</div>
+            <ul class="task-list">
+              <li><strong>Very few fresher/junior DE portfolio projects include tests</strong> — this immediately sets you apart</li>
+              <li>Big 4 and product companies always ask "how would you test this pipeline?" — you can answer with real code</li>
+              <li>pytest expertise is explicitly listed in most DE JDs for companies like Flipkart, Amazon, Razorpay</li>
+            </ul>
+          </div>
+          <div class="deliverable-box">
+            <span class="deliverable-label">✓ End of Day Deliverables</span>
+            <div class="deliverable-files">
+              <span class="file-chip">tests/conftest.py</span>
+              <span class="file-chip">tests/test_velocity.py</span>
+              <span class="file-chip">tests/test_geo.py</span>
+              <span class="file-chip">tests/test_amount.py</span>
+              <span class="file-chip">tests/test_fraud_analyzer.py</span>
+              <span class="file-chip">Coverage report ≥80% ✓</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── DAY 7 ── -->
+    <div class="day-card">
+      <div class="day-marker">
+        <div class="day-dot"></div>
+        <div class="day-num-text">Day 07</div>
+      </div>
+      <div class="day-body">
+        <div class="day-header">
+          <div class="day-title-area">
+            <div class="day-tag">Phase 05 · Documentation</div>
+            <div class="day-title">README, Architecture Diagram & Streamlit Dashboard</div>
+            <div class="day-badges">
+              <span class="day-badge badge-docs">Docs</span>
+              <span class="day-badge badge-python">Streamlit</span>
+              <span class="day-badge badge-docs">Architecture</span>
+            </div>
+          </div>
+          <div class="day-effort">
+            <div class="effort-label">Effort</div>
+            <div class="effort-val">5–6<span class="effort-unit"> hrs</span></div>
+          </div>
+        </div>
+        <div class="day-content">
+          <div class="content-section">
+            <div class="cs-title">README — What To Include</div>
+            <ul class="task-list">
+              <li><strong>Hero section</strong>: project title, one-line description, badges (Python version, tests passing, coverage %)</li>
+              <li><strong>Problem statement</strong>: what fraud patterns does this detect and why they matter</li>
+              <li><strong>Architecture diagram</strong>: a simple Mermaid diagram or image showing data flow (CSV → DuckDB → SQL queries → Python → JSON → Streamlit)</li>
+              <li><strong>Folder structure</strong>: show the repo layout with one-line descriptions per folder</li>
+              <li><strong>Quick start guide</strong>: step-by-step commands from git clone to running the analyzer</li>
+              <li><strong>Fraud detection logic</strong>: explain each of the 3 detection methods in plain English with a SQL snippet</li>
+              <li><strong>Sample output</strong>: paste 3–5 lines of the findings.json with a note on flag counts</li>
+              <li><strong>Live demo link</strong>: Streamlit Cloud URL (added on Day 8)</li>
+            </ul>
+          </div>
+          <div class="content-section">
+            <div class="cs-title">Streamlit Dashboard — Build Today</div>
+            <ul class="task-list">
+              <li>Create <strong>dashboard/app.py</strong> — a Streamlit app that loads findings.json and displays: total transaction count, 3 metric cards (one per fraud type), a flagged transactions table per type, a bar chart comparing flag counts</li>
+              <li>Add a <strong>"Run Analysis" button</strong> that calls <code>FraudAnalyzer().run_all()</code> and refreshes the display — this makes the demo interactive</li>
+              <li>Use <code>st.dataframe()</code> with column highlighting to show flagged transactions in a clean table</li>
+              <li>Add simple filters: filter by card_id, by amount range, by city</li>
+              <li>Keep it clean — dark theme in Streamlit (<code>.streamlit/config.toml</code> with <code>theme.base = "dark"</code>)</li>
+            </ul>
+          </div>
+          <div class="content-section">
+            <div class="cs-title">Tools for Documentation</div>
+            <div class="tools-grid">
+              <div class="tool-item">
+                <span class="tool-icon">📝</span>
+                <span>
+                  <span class="tool-name">Streamlit</span>
+                  <span class="tool-desc"><code>pip install streamlit</code> — builds a web app in pure Python. Free cloud deployment on Streamlit Community Cloud</span>
+                </span>
+              </div>
+              <div class="tool-item">
+                <span class="tool-icon">🖼️</span>
+                <span>
+                  <span class="tool-name">Mermaid (for architecture diagrams)</span>
+                  <span class="tool-desc">GitHub natively renders Mermaid diagrams inside README.md — no image needed. <code>```mermaid</code> code block</span>
+                </span>
+              </div>
+              <div class="tool-item">
+                <span class="tool-icon">🏷️</span>
+                <span>
+                  <span class="tool-name">shields.io</span>
+                  <span class="tool-desc">Generate README badges (Python version, license, test status). Purely cosmetic but makes repo look professional</span>
+                </span>
+              </div>
+            </div>
+            <div class="resources-list" style="margin-top:12px">
+              <div class="resource-item"><a href="https://docs.streamlit.io/get-started" target="_blank">Streamlit Quickstart</a> — build a dashboard in 30 minutes</div>
+              <div class="resource-item"><a href="https://mermaid.js.org/syntax/flowchart.html" target="_blank">Mermaid Flowchart Syntax</a> — for architecture diagram in README</div>
+              <div class="resource-item"><a href="https://shields.io/" target="_blank">shields.io</a> — README badges generator</div>
+            </div>
+          </div>
+          <div class="content-section">
+            <div class="cs-title">Architecture Diagram (Mermaid)</div>
+            <div class="code-block">```mermaid
+flowchart LR
+  A[generate_data.py] --<span class="str">"1M rows CSV"</span>--> B[(DuckDB\nfraud.db)]
+  B --> C[velocity_fraud.sql]
+  B --> D[geo_fraud.sql]
+  B --> E[amount_deviation.sql]
+  C --> F[fraud_analyzer.py]
+  D --> F
+  E --> F
+  F --<span class="str">"JSON export"</span>--> G[findings.json]
+  G --> H[Streamlit Dashboard]
+```</div>
+          </div>
+          <div class="deliverable-box">
+            <span class="deliverable-label">✓ End of Day Deliverables</span>
+            <div class="deliverable-files">
+              <span class="file-chip">README.md (complete)</span>
+              <span class="file-chip">dashboard/app.py</span>
+              <span class="file-chip">.streamlit/config.toml</span>
+              <span class="file-chip">Architecture diagram ✓</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── DAY 8 ── -->
+    <div class="day-card">
+      <div class="day-marker">
+        <div class="day-dot end"></div>
+        <div class="day-num-text">Day 08</div>
+      </div>
+      <div class="day-body">
+        <div class="day-header">
+          <div class="day-title-area">
+            <div class="day-tag">Phase 06 · Launch Day</div>
+            <div class="day-title">Deploy, Publish & Promote</div>
+            <div class="day-badges">
+              <span class="day-badge badge-deploy">Deploy</span>
+              <span class="day-badge badge-deploy">GitHub</span>
+              <span class="day-badge badge-deploy">LinkedIn</span>
+              <span class="day-badge badge-docs">Naukri</span>
+            </div>
+          </div>
+          <div class="day-effort">
+            <div class="effort-label">Effort</div>
+            <div class="effort-val">4–5<span class="effort-unit"> hrs</span></div>
+          </div>
+        </div>
+        <div class="day-content">
+          <div class="content-section">
+            <div class="cs-title">Morning: Deploy the Dashboard</div>
+            <ul class="task-list">
+              <li>Push final code to GitHub — make sure the repo is <strong>public</strong>, has a clear description, and topics set: <code>sql, python, duckdb, fraud-detection, data-engineering, portfolio</code></li>
+              <li>Deploy to <strong>Streamlit Community Cloud</strong> (share.streamlit.io) — free hosting, no credit card needed. Connect your GitHub repo, set main file as <code>dashboard/app.py</code></li>
+              <li>Since the 1M-row dataset is large, have the app generate a <strong>smaller sample dataset (50K rows)</strong> on first launch for the demo — add a note "Full 1M dataset runs locally"</li>
+              <li>Test the live URL in incognito mode to confirm it works for a fresh visitor</li>
+              <li>Add the live Streamlit URL to your GitHub repo description and README</li>
+            </ul>
+          </div>
+          <div class="content-section">
+            <div class="cs-title">Afternoon: Publish Across Platforms</div>
+            <ul class="task-list">
+              <li><strong>LinkedIn post</strong>: Share 3 visuals (fraud pattern diagram, Streamlit dashboard screenshot, test coverage report). Caption: "Built a fraud detection SQL pipeline from scratch — here's what I learned about window functions, Z-scores, and testing data pipelines"</li>
+              <li><strong>Naukri profile</strong>: Add this under Projects with title "Fraud Pattern SQL Analysis — 1M Transaction Pipeline". List skills: DuckDB, SQL (Window Functions), Python, pytest, Streamlit. Include GitHub + live demo link</li>
+              <li><strong>Personal portfolio</strong>: Add a project card with one-paragraph description, tech stack pills, and two links: GitHub + Live Demo</li>
+              <li><strong>GitHub profile README</strong>: If you have one, add this project to your pinned repositories</li>
+              <li>Post a short <strong>write-up on DEV.to or Hashnode</strong>: "How I detected fraud in 1M bank transactions using SQL window functions" — include the key code snippets. This gets indexed on Google and shows up when recruiters search your name</li>
+            </ul>
+          </div>
+          <div class="content-section">
+            <div class="cs-title">Tools for Day 8</div>
+            <div class="tools-grid">
+              <div class="tool-item">
+                <span class="tool-icon">☁️</span>
+                <span>
+                  <span class="tool-name">Streamlit Community Cloud</span>
+                  <span class="tool-desc">Free Streamlit hosting — <a href="https://share.streamlit.io" style="color:var(--accent3)">share.streamlit.io</a>. Connects directly to your public GitHub repo</span>
+                </span>
+              </div>
+              <div class="tool-item">
+                <span class="tool-icon">📸</span>
+                <span>
+                  <span class="tool-name">Carbon / Ray.so</span>
+                  <span class="tool-desc">Beautiful code screenshots for your LinkedIn post — makes SQL snippets look stunning</span>
+                </span>
+              </div>
+              <div class="tool-item">
+                <span class="tool-icon">✍️</span>
+                <span>
+                  <span class="tool-name">DEV.to / Hashnode</span>
+                  <span class="tool-desc">Free technical blogging — posts get indexed on Google, adding discoverability to your project</span>
+                </span>
+              </div>
+            </div>
+          </div>
+          <div class="content-section">
+            <div class="cs-title">LinkedIn Caption Formula</div>
+            <ul class="task-list">
+              <li><strong>Hook</strong>: "Banks lose $32B/year to fraud. Here's how a Data Engineer would detect it using SQL."</li>
+              <li><strong>What you built</strong>: 2–3 sentences on the project</li>
+              <li><strong>Key learnings</strong>: 3 bullet points on SQL/Python concepts you used</li>
+              <li><strong>Links</strong>: GitHub → Live Demo → "Open to DE opportunities"</li>
+            </ul>
+          </div>
+          <div class="deliverable-box">
+            <span class="deliverable-label">✓ End of Day Deliverables</span>
+            <div class="deliverable-files">
+              <span class="file-chip">Live Streamlit URL ✓</span>
+              <span class="file-chip">GitHub repo (public) ✓</span>
+              <span class="file-chip">LinkedIn post live ✓</span>
+              <span class="file-chip">Naukri updated ✓</span>
+              <span class="file-chip">Portfolio updated ✓</span>
+              <span class="file-chip">Blog post published ✓</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end days-wrapper -->
+</div><!-- end container -->
+
+<!-- ╔══════════════════════════════════════════════════════╗ -->
+<!-- ║                   DEPLOYMENT TABLE                  ║ -->
+<!-- ╚══════════════════════════════════════════════════════╝ -->
+<div class="fw-section">
+  <div class="inner">
+    <h2 style="font-family:var(--serif); font-size:32px; font-weight:600; margin-bottom:8px;">Free Deployment Stack</h2>
+    <p style="font-size:13px; color:var(--text-dim);">Everything needed to showcase this project — all free tier.</p>
+
+    <div class="deploy-grid">
+      <div class="deploy-item">
+        <div class="deploy-service">GitHub</div>
+        <div class="deploy-purpose">Code & Version Control</div>
+        <div class="deploy-desc">Public repo with all code, SQL files, tests, README. The canonical link you share everywhere. Set repo topics for discoverability.</div>
+      </div>
+      <div class="deploy-item">
+        <div class="deploy-service">Streamlit Cloud</div>
+        <div class="deploy-purpose">Live Dashboard</div>
+        <div class="deploy-desc">Free hosting for Streamlit apps connected to a public GitHub repo. Gives you a shareable URL like <em>yourname-fraud-dashboard.streamlit.app</em></div>
+      </div>
+      <div class="deploy-item">
+        <div class="deploy-service">DEV.to</div>
+        <div class="deploy-purpose">Technical Blog</div>
+        <div class="deploy-desc">Free blog platform for developers. Posts are indexed by Google — adds SEO discoverability. Cross-post to Hashnode or Medium for reach.</div>
+      </div>
+      <div class="deploy-item">
+        <div class="deploy-service">GitHub Pages</div>
+        <div class="deploy-purpose">Portfolio Website</div>
+        <div class="deploy-desc">Host this HTML plan file + your portfolio at <em>username.github.io</em>. Link the fraud project with live demo URL from your portfolio project card.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════════╗ -->
+<!-- ║                 FINAL CHECKLIST                     ║ -->
+<!-- ╚══════════════════════════════════════════════════════╝ -->
+<div class="container">
+  <div class="section-header">
+    <h2>Launch Checklist</h2>
+    <div class="line"></div>
+  </div>
+
+  <div class="final-checklist">
+    <div class="check-item"><div class="check-box"></div><span class="check-text"><strong>generate_data.py</strong> produces 1M+ realistic transactions with injected fraud seeds</span></div>
+    <div class="check-item"><div class="check-box"></div><span class="check-text"><strong>velocity_fraud.sql</strong> using RANGE window frames — catches rapid-fire transactions</span></div>
+    <div class="check-item"><div class="check-box"></div><span class="check-text"><strong>geo_fraud.sql</strong> using LAG() — flags impossible geographic patterns</span></div>
+    <div class="check-item"><div class="check-box"></div><span class="check-text"><strong>amount_deviation.sql</strong> using Z-score — detects statistical anomalies in spend</span></div>
+    <div class="check-item"><div class="check-box"></div><span class="check-text"><strong>fraud_analyzer.py</strong> orchestrates all 3 queries and exports structured JSON</span></div>
+    <div class="check-item"><div class="check-box"></div><span class="check-text"><strong>pytest suite</strong> with fixtures, edge case tests, 80%+ coverage</span></div>
+    <div class="check-item"><div class="check-box"></div><span class="check-text"><strong>README.md</strong> with architecture diagram, quick start, sample output, live demo link</span></div>
+    <div class="check-item"><div class="check-box"></div><span class="check-text"><strong>Streamlit dashboard</strong> deployed live on Streamlit Community Cloud</span></div>
+    <div class="check-item"><div class="check-box"></div><span class="check-text"><strong>GitHub repo</strong> public with topics, description, and pinned</span></div>
+    <div class="check-item"><div class="check-box"></div><span class="check-text"><strong>LinkedIn post</strong> with visuals, key learnings, and live demo link</span></div>
+    <div class="check-item"><div class="check-box"></div><span class="check-text"><strong>Naukri profile</strong> updated with project title, skills, and links</span></div>
+    <div class="check-item"><div class="check-box"></div><span class="check-text"><strong>Blog post</strong> on DEV.to or Hashnode for long-term SEO discoverability</span></div>
+  </div>
+
+  <div style="margin: 48px 0; padding: 28px 32px; background: var(--bg2); border: 1px solid rgba(232,53,74,0.3); border-radius:4px;">
+    <div style="font-size:11px; letter-spacing:0.15em; text-transform:uppercase; color:var(--accent); margin-bottom:10px;">Pro Tip for Interviews</div>
+    <p style="font-size:13px; color:var(--text-mid); line-height:1.8; max-width:800px;">
+      When you mention this project in an interview, don't just say <em>"I built a fraud detection pipeline."</em> 
+      Say: <strong style="color:var(--text)">"I processed 1 million bank transactions using DuckDB and SQL window functions to detect 3 types of fraud — 
+      velocity patterns with RANGE-based window frames, geographic impossibility using LAG(), and statistical 
+      deviations using Z-scores. The Python orchestration layer exports findings as structured JSON, 
+      and I wrote a full pytest suite with 85% coverage. Here's the live dashboard."</strong>
+      That's a DE answer that makes interviewers lean forward.
+    </p>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-brand">Fraud Pattern <span>SQL Analysis</span> — 8-Day Plan</div>
+  <div class="footer-note">Built for Data Engineering Portfolio · DuckDB · Python · pytest · Streamlit</div>
+</footer>
+
+</body>
+</html>
