@@ -1,0 +1,17 @@
+Window Functions
+    real interview topic
+
+Time-based fraud detection
+    real fintech use case
+
+CTE structure
+    readable SQL
+
+Risk scoring
+    production concept
+
+DB View
+    reusable pipeline component
+
+Interview Explanation 
+“I implemented velocity fraud detection using a time-based window function with RANGE BETWEEN INTERVAL. This allows me to compute rolling transaction counts per card and flag anomalies exceeding a threshold. I also added a risk score and materialized it as a DuckDB view for downstream consumption.”
