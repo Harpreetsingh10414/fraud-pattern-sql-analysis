@@ -1,0 +1,15 @@
+Sequential event analysis
+(using LAG())
+
+Time difference logic
+
+Business rule join (city travel)
+
+Real-world fraud modeling
+
+Risk scoring
+
+Production view
+
+Interview Explanation (Memorize This)
+“I implemented impossible travel detection using the LAG window function to compare consecutive transactions per card. I computed time differences and joined with a reference table of minimum travel times between cities to flag violations.”
