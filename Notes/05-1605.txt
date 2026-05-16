@@ -1,0 +1,12 @@
+Data pipeline orchestrator
+
+SQL + Python integration
+
+Structured output system
+
+CLI-executable module
+
+Production-style architecture
+Interview Explanation (VERY IMPORTANT)
+
+“I built a Python orchestration layer that dynamically reads SQL queries, executes them using DuckDB, aggregates results, and exports structured JSON output. This mimics real-world data pipelines where SQL transformations are orchestrated via Python.”
