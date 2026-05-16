@@ -1,0 +1,12 @@
+Statistical anomaly detection
+
+Z-score modeling
+
+Personalized baselines
+
+Edge case handling
+
+Risk categorization
+Interview Explanation (VERY IMPORTANT)
+
+“I implemented anomaly detection using Z-score to identify transactions deviating from historical spending patterns. I computed per-card baselines and flagged transactions beyond 3 standard deviations, handling edge cases like insufficient history and zero variance.”
