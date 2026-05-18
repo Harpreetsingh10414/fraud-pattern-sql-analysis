@@ -1,0 +1,12 @@
+Unit tests
+
+Integration tests
+
+Controlled test data
+
+Pipeline validation
+
+Coverage reporting
+
+Interview Explanation (Very Important)
+“I created a pytest test suite with an in-memory DuckDB fixture containing synthetic fraud scenarios. Each fraud type is tested independently, and the full pipeline is validated end-to-end with JSON output checks.”
