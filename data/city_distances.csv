@@ -1,0 +1,11 @@
+city_from,city_to,min_travel_minutes
+Delhi,Mumbai,120
+Delhi,Bangalore,150
+Delhi,Chennai,180
+Mumbai,Bangalore,90
+Mumbai,Chennai,120
+Bangalore,Chennai,60
+Delhi,Hyderabad,150
+Mumbai,Hyderabad,120
+Kolkata,Delhi,150
+Pune,Mumbai,60
