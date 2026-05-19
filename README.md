@@ -1,93 +1,198 @@
-# Fraud Pattern SQL Analysis
+# 🚨 Fraud Pattern SQL Analysis
 
-A production-style fraud detection pipeline built using SQL, DuckDB, and Python to detect real-world fraud patterns in financial transactions.
+Production-style fraud detection pipeline built using SQL, DuckDB, Python and Streamlit.
 
-## Problem
+This project simulates banking transactions and detects real-world fraud patterns using analytical SQL and Python orchestration.
 
-Fraud detection in financial systems requires identifying abnormal transaction patterns in real time.
+---
 
-This project detects three key fraud patterns:
+## Problem Statement
 
-1. Velocity Fraud → Too many transactions in a short time window  
-2. Geographic Fraud → Same card used in different cities within impossible time  
-3. Amount Deviation → Transaction amount deviates from historical baseline  
+Financial institutions process millions of transactions daily.
+
+Fraud often appears as hidden patterns rather than obvious failures.
+
+This project detects:
+
+- Velocity Fraud  
+- Geographic Impossibility Fraud  
+- Amount Deviation Fraud  
+
+using SQL, statistical methods and behavioral analysis.
+
+---
+
+## Fraud Types
+
+### 1. Velocity Fraud
+
+Too many transactions in a short period.
+
+Example:
+
+Card used:
+
+10:00  
+10:01  
+10:02  
+10:03  
+10:04  
+10:05
+
+Flagged when transaction count exceeds threshold.
+
+Uses:
+
+- SQL Window Functions
+- RANGE BETWEEN INTERVAL
+
+---
+
+### 2. Geographic Fraud
+
+Card used in impossible locations.
+
+Example:
+
+Delhi → 9:00 AM
+
+Mumbai → 9:30 AM
+
+Uses:
+
+- LAG()
+- Timestamp calculations
+- City travel reference table
+
+---
+
+### 3. Amount Deviation Fraud
+
+Transaction amount significantly deviates from historical behavior.
+
+Uses:
+
+- AVG
+- STDDEV
+- Z-score anomaly detection
+
+---
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-    A[Generate Data] --> B[DuckDB Database]
-    B --> C[SQL Fraud Detection]
-    C --> D[Python Analyzer]
-    D --> E[JSON Output]
-    E --> F[Streamlit Dashboard]
 
+A[Generate Data]
+--> B[DuckDB]
 
----
+B
+--> C[Velocity Fraud SQL]
 
-### 📁 Project Structure
+B
+--> D[Geo Fraud SQL]
 
-```markdown
-## Project Structure
+B
+--> E[Amount Fraud SQL]
 
-fraud-pattern-sql-analysis/
-│
-├── sql/ # SQL fraud detection queries
-├── data/ # Synthetic datasets
-├── results/ # Output JSON
-├── tests/ # pytest suite
-│
-├── generate_data.py
-├── fraud_analyzer.py
-├── README.md
+C --> F[Python Fraud Analyzer]
+D --> F
+E --> F
 
-## Setup
+F --> G[JSON Findings]
 
-```bash
-git clone <your-repo>
-cd fraud-pattern-sql-analysis
-
-python -m venv venv
-source venv/bin/activate
-
-pip install -r requirements.txt
-
-
----
-
-### 📊 Sample Output
-
-```markdown
-## Sample Output
-
-```json
-{
-  "summary": {
-    "velocity_flags": 1800,
-    "geo_flags": 400,
-    "amount_flags": 900
-  }
-}
-
-
----
-
-### 🧠 Key Learnings
-
-```markdown
-## Key Learnings
-
-- Advanced SQL window functions
-- Fraud detection modeling
-- Data pipeline orchestration
-- Statistical anomaly detection
-- Test-driven data engineering
+G --> H[Streamlit Dashboard]
+```
 
 ## Tech Stack
 
-- DuckDB
 - Python
+- DuckDB
+- SQL
 - Pandas
 - Faker
 - pytest
 - Streamlit
+
+---
+
+## Folder Structure
+
+```text
+fraud-pattern-sql-analysis/
+
+dashboard/
+sql/
+tests/
+data/
+results/
+
+generate_data.py
+fraud_analyzer.py
+README.md
+```
+
+---
+
+## Setup
+
+```bash
+git clone <repo>
+
+cd fraud-pattern-sql-analysis
+
+python -m venv venv
+
+source venv/bin/activate
+
+pip install -r requirements.txt
+```
+
+---
+
+## Run Pipeline
+
+```bash
+python fraud_analyzer.py
+```
+
+---
+
+## Run Dashboard
+
+```bash
+streamlit run dashboard/app.py
+```
+
+---
+
+## Run Tests
+
+```bash
+pytest
+```
+
+---
+
+## Sample Output
+
+```json
+{
+   "summary":{
+      "velocity_flags":1800,
+      "geo_flags":400,
+      "amount_flags":900
+   }
+}
+```
+
+---
+
+## Key Learnings
+
+- Window functions
+- LAG()
+- Statistical anomaly detection
+- DuckDB analytics
+- Data pipeline orchestration
+- Test-driven engineering
